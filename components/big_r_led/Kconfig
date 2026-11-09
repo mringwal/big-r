@@ -1,0 +1,16 @@
+menu "BIG-R LEDs"
+    config BIG_R_LED_GPIO
+        int "WS2812 data GPIO"
+        range 0 48
+        default 0
+    config BIG_R_LED_COUNT
+        int "Number of physical WS2812 LEDs"
+        range 573 4096
+        default 573
+        help
+            The original mapping addresses LED indices 0 through 572.
+    config BIG_R_FRAME_MS
+        int "Animation frame delay (ms)"
+        range 20 1000
+        default 20
+endmenu

@@ -1,0 +1,11 @@
+menu "BIG-R application"
+    config BIG_R_BUTTON_GPIO
+        int "Active-low animation button GPIO (-1 disables)"
+        range -1 48
+        default 10
+        help
+            GPIO10 is the installed active-low BIG-R animation button, verified by RAM monitoring.
+    config ENABLE_MEMORY_PROFILING
+        bool "Enable memory profiling"
+        default n
+endmenu

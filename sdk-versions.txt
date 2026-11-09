@@ -1,0 +1,9 @@
+ESP-IDF v6.0.2
+  path: ../esp-idf-v6.0.2
+  commit: 7101770dc6db2667b3c477cc31365dd1acd6db4e
+ESP-Matter release/v1.6.1
+  path: ../esp-matter
+  commit: 1a1b29e80d07523b6bdab2a18ee2a3f2447f134a
+connectedhomeip
+  commit: b1902b39ac6734913ce5f4d2abf153693a50264b
+Managed components: dependencies.lock
