@@ -44,9 +44,25 @@ static void mapped_color(unsigned r, unsigned g, unsigned b) {
         assert(pixels[i].red == 0 && pixels[i].green == 0 && pixels[i].blue == 0);
 }
 int main(void) {
+    size_t count = 0;
+    const big_r_animation_info_t *list = big_r_led_get_animations(&count);
+    const char *names[] = {"Rainbow horizontal", "Rainbow vertical", "Rainbow quadrant", "Rainbow centered"};
+    assert(list && count == 4 && big_r_led_get_animations(NULL) == list);
+    for (size_t i = 0; i < count; ++i) {
+        assert(list[i].id == (big_r_animation_t)(i + 1));
+        assert(strcmp(list[i].name, names[i]) == 0);
+    }
+    big_r_animation_t current;
+    assert(big_r_led_get_animation(NULL, &current) != 0);
+    assert(big_r_led_set_animation(NULL, list[0].id) != 0);
     big_r_led_config_t cfg = {.gpio=18};
     void *h = big_r_led_init(&cfg);
     assert(h && task_fn);
+    assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_SOLID);
+    assert(big_r_led_get_animation(h, NULL) != 0);
+    assert(big_r_led_set_animation(h, BIG_R_ANIMATION_OFF) != 0);
+    assert(big_r_led_set_animation(h, BIG_R_ANIMATION_SOLID) != 0);
+    assert(big_r_led_set_animation(h, (big_r_animation_t)99) != 0);
     frame(); assert(dark());
     assert(big_r_led_set_brightness(h, 100) == 0);
     assert(big_r_led_set_hue(h, 0) == 0);
@@ -55,6 +71,7 @@ int main(void) {
     // Four distinct pattern frames must match the original geometry and HSV tables.
     for (unsigned p = 0; p < 4; ++p) {
         assert(big_r_led_next_animation()); frame(); assert(!dark());
+        assert(big_r_led_get_animation(h, &current) == 0 && current == list[p].id);
         for (unsigned i = 0; i < sizeof(led_to_matrix)/sizeof(*led_to_matrix); ++i) {
             RGB_color_t expected;
             HS_color_t hs = {patterns[p][led_to_matrix[i].matrix_index],100};
@@ -71,7 +88,18 @@ int main(void) {
         assert(memcmp(&expected,&pixels[led_to_matrix[i].led_id],sizeof(expected)) == 0);
     }
     assert(!big_r_led_next_animation()); frame(); assert(dark());
+    assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_OFF);
+    // Direct selection works from local off and from the independent power gate.
+    assert(big_r_led_set_animation(h, BIG_R_ANIMATION_RAINBOW_VERTICAL) == 0);
+    assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_RAINBOW_VERTICAL);
+    frame(); assert(!dark());
+    assert(big_r_led_set_power(h, false) == 0); frame(); assert(dark());
+    assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_RAINBOW_VERTICAL);
+    assert(big_r_led_set_animation(h, BIG_R_ANIMATION_RAINBOW_CENTERED) == 0);
+    frame(); assert(!dark());
+    assert(!big_r_led_next_animation());
     assert(big_r_led_set_hue(h,120) == 0); frame(); mapped_color(0,255,0);
+    assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_SOLID);
     assert(big_r_led_next_animation()); frame(); assert(!dark());
     // Matter color exits animation; power-off and local off can both be left by color.
     assert(big_r_led_set_hue(h,120) == 0); frame(); mapped_color(0,255,0);

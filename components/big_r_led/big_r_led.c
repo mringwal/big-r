@@ -15,7 +15,15 @@
 
 #define MATRIX_PIXELS (32 * 32)
 #define PATTERN_COUNT (sizeof(patterns) / sizeof(patterns[0]))
-enum { MODE_OFF = 0, MODE_SOLID = 5 };
+enum { MODE_OFF = BIG_R_ANIMATION_OFF, MODE_SOLID = BIG_R_ANIMATION_SOLID };
+static const big_r_animation_info_t animations[] = {
+    {BIG_R_ANIMATION_RAINBOW_HORIZONTAL, "Rainbow horizontal"},
+    {BIG_R_ANIMATION_RAINBOW_VERTICAL, "Rainbow vertical"},
+    {BIG_R_ANIMATION_RAINBOW_QUADRANT, "Rainbow quadrant"},
+    {BIG_R_ANIMATION_RAINBOW_CENTERED, "Rainbow centered"},
+};
+_Static_assert(sizeof(animations) / sizeof(animations[0]) == PATTERN_COUNT, "Animation list must match patterns");
+_Static_assert(BIG_R_ANIMATION_SOLID == PATTERN_COUNT + 1, "Animation IDs must match patterns");
 typedef struct {
     bool power;
     uint8_t brightness;
@@ -102,6 +110,32 @@ big_r_led_handle_t big_r_led_init(big_r_led_config_t *config)
         return NULL;
     }
     return strip;
+}
+
+const big_r_animation_info_t *big_r_led_get_animations(size_t *count)
+{
+    if (count) *count = sizeof(animations) / sizeof(animations[0]);
+    return animations;
+}
+
+esp_err_t big_r_led_get_animation(big_r_led_handle_t handle, big_r_animation_t *animation)
+{
+    if (handle != strip || !strip || !animation) return ESP_ERR_INVALID_ARG;
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    *animation = (big_r_animation_t)state.mode;
+    xSemaphoreGive(mutex);
+    return ESP_OK;
+}
+
+esp_err_t big_r_led_set_animation(big_r_led_handle_t handle, big_r_animation_t animation)
+{
+    if (handle != strip || !strip || animation < BIG_R_ANIMATION_RAINBOW_HORIZONTAL ||
+        animation > BIG_R_ANIMATION_RAINBOW_CENTERED) return ESP_ERR_INVALID_ARG;
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    state.mode = (unsigned)animation;
+    state.power = true;
+    xSemaphoreGive(mutex);
+    return ESP_OK;
 }
 
 bool big_r_led_next_animation(void)
