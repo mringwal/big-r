@@ -40,6 +40,10 @@ const big_r_animation_info_t *big_r_led_get_animations(size_t *count);
 esp_err_t big_r_led_get_animation(big_r_led_handle_t handle, big_r_animation_t *animation);
 // Selects a listed animation and enables output; off and solid are not accepted.
 esp_err_t big_r_led_set_animation(big_r_led_handle_t handle, big_r_animation_t animation);
+// Atomically read the selected mode and power gate.
+esp_err_t big_r_led_get_state(big_r_led_handle_t handle, big_r_animation_t *animation, bool *power);
+// Restore the last solid color and enable output.
+esp_err_t big_r_led_select_solid(big_r_led_handle_t handle);
 // Cycle solid -> animation 1 -> ... -> animation 4 -> off -> animation 1.
 // Returns the resulting power state. Call after initialization, in task context.
 bool big_r_led_next_animation(void);

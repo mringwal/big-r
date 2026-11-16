@@ -74,6 +74,7 @@ static void next_animation(intptr_t)
     ESP_LOGI(TAG, "Button selected %s", power ? "animation" : "off");
     esp_matter_attr_val_t val = esp_matter_bool(power);
     attribute::update(light_endpoint_id, OnOff::Id, OnOff::Attributes::OnOff::Id, &val);
+    app_mqtt_publish_state();
 }
 
 // Poll at 20 ms and require three identical samples for debounce.
@@ -140,7 +141,30 @@ esp_err_t app_driver_attribute_update(app_driver_handle_t driver_handle, uint16_
             err = attribute::update(endpoint_id, OnOff::Id, OnOff::Attributes::OnOff::Id, &power);
         }
     }
+    if (err == ESP_OK && endpoint_id == light_endpoint_id &&
+        (cluster_id == OnOff::Id || cluster_id == ColorControl::Id)) {
+        app_mqtt_publish_state();
+    }
     return err;
+}
+
+void app_driver_select_mode(intptr_t requested)
+{
+    auto mode = static_cast<big_r_animation_t>(requested);
+    auto handle = static_cast<big_r_led_handle_t>(endpoint::get_priv_data(light_endpoint_id));
+    bool power = mode != BIG_R_ANIMATION_OFF;
+    esp_err_t err;
+    if (mode == BIG_R_ANIMATION_OFF) err = big_r_led_set_power(handle, false);
+    else if (mode == BIG_R_ANIMATION_SOLID) err = big_r_led_select_solid(handle);
+    else err = big_r_led_set_animation(handle, mode);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Could not select mode: %s", esp_err_to_name(err));
+        return;
+    }
+    esp_matter_attr_val_t val = esp_matter_bool(power);
+    err = attribute::update(light_endpoint_id, OnOff::Id, OnOff::Attributes::OnOff::Id, &val);
+    if (err != ESP_OK) ESP_LOGE(TAG, "Could not update Matter power: %s", esp_err_to_name(err));
+    app_mqtt_publish_state();
 }
 
 esp_err_t app_driver_light_set_defaults(uint16_t endpoint_id)
@@ -224,6 +248,7 @@ static void apply_requested_solid(intptr_t endpoint_id)
     ESP_ERROR_CHECK(app_driver_light_set_defaults((uint16_t)endpoint_id));
     esp_matter_attr_val_t power = esp_matter_bool(true);
     attribute::update((uint16_t)endpoint_id, OnOff::Id, OnOff::Attributes::OnOff::Id, &power);
+    app_mqtt_publish_state();
 }
 
 template <typename T>

@@ -127,6 +127,26 @@ esp_err_t big_r_led_get_animation(big_r_led_handle_t handle, big_r_animation_t *
     return ESP_OK;
 }
 
+esp_err_t big_r_led_get_state(big_r_led_handle_t handle, big_r_animation_t *animation, bool *power)
+{
+    if (handle != strip || !strip || !animation || !power) return ESP_ERR_INVALID_ARG;
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    *animation = (big_r_animation_t)state.mode;
+    *power = state.power;
+    xSemaphoreGive(mutex);
+    return ESP_OK;
+}
+
+esp_err_t big_r_led_select_solid(big_r_led_handle_t handle)
+{
+    if (handle != strip || !strip) return ESP_ERR_INVALID_ARG;
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    state.mode = MODE_SOLID;
+    state.power = true;
+    xSemaphoreGive(mutex);
+    return ESP_OK;
+}
+
 esp_err_t big_r_led_set_animation(big_r_led_handle_t handle, big_r_animation_t animation)
 {
     if (handle != strip || !strip || animation < BIG_R_ANIMATION_RAINBOW_HORIZONTAL ||

@@ -6,6 +6,7 @@
 #include "led_strip.h"
 #include "big_r_led.h"
 #include "color_format.h"
+#include "mqtt_select.h"
 #include "../components/big_r_led/big_r_patterns.h"
 static RGB_color_t pixels[CONFIG_BIG_R_LED_COUNT];
 static void (*task_fn)(void *);
@@ -51,8 +52,20 @@ int main(void) {
     for (size_t i = 0; i < count; ++i) {
         assert(list[i].id == (big_r_animation_t)(i + 1));
         assert(strcmp(list[i].name, names[i]) == 0);
+        big_r_animation_t parsed;
+        assert(mqtt_select_parse(names[i], strlen(names[i]), &parsed) && parsed == list[i].id);
+        assert(strcmp(mqtt_select_state(parsed, true), names[i]) == 0);
+        assert(strcmp(mqtt_select_state(parsed, false), "Off") == 0);
     }
     big_r_animation_t current;
+    assert(mqtt_select_parse("Off", 3, &current) && current == BIG_R_ANIMATION_OFF);
+    assert(mqtt_select_parse("Solid", 5, &current) && current == BIG_R_ANIMATION_SOLID);
+    assert(!mqtt_select_parse("Solid!", 6, &current));
+    assert(!mqtt_select_parse("", 0, &current));
+    assert(!mqtt_select_parse(NULL, 0, &current));
+    assert(!mqtt_select_parse("Off", 3, NULL));
+    assert(strcmp(mqtt_select_state(BIG_R_ANIMATION_OFF, true), "Off") == 0);
+    assert(strcmp(mqtt_select_state(BIG_R_ANIMATION_SOLID, true), "Solid") == 0);
     assert(big_r_led_get_animation(NULL, &current) != 0);
     assert(big_r_led_set_animation(NULL, list[0].id) != 0);
     big_r_led_config_t cfg = {.gpio=18};
@@ -97,6 +110,11 @@ int main(void) {
     assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_RAINBOW_VERTICAL);
     assert(big_r_led_set_animation(h, BIG_R_ANIMATION_RAINBOW_CENTERED) == 0);
     frame(); assert(!dark());
+    bool power;
+    assert(big_r_led_get_state(h, &current, &power) == 0 && power && current == BIG_R_ANIMATION_RAINBOW_CENTERED);
+    assert(big_r_led_select_solid(h) == 0); frame(); mapped_color(255,0,0);
+    assert(big_r_led_get_state(h, &current, &power) == 0 && power && current == BIG_R_ANIMATION_SOLID);
+    assert(big_r_led_set_animation(h, BIG_R_ANIMATION_RAINBOW_CENTERED) == 0);
     assert(!big_r_led_next_animation());
     assert(big_r_led_set_hue(h,120) == 0); frame(); mapped_color(0,255,0);
     assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_SOLID);

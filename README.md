@@ -109,6 +109,14 @@ The implementation is the `components/lan_ota` component; laptop helpers are in 
 - Matter On/Off gates the current animation/color. Turning on from the button's off mode restores the last solid color.
 - Button changes update the Matter On/Off attribute. There is no long-press factory reset; the console's factory-reset command remains available.
 
+### Home Assistant animation selector
+
+BIG-R connects to the MQTT broker at `homeassistant.local:1883` using the configured credentials in `main/app_mqtt.cpp`. This is plain MQTT, so the credentials and commands are not encrypted on the network. Home Assistant's MQTT integration and discovery must be enabled, and the broker must allow this device to publish and subscribe. The credentials are compiled into the firmware.
+
+After connecting, BIG-R announces a separate MQTT select entity named **Animation** with Rainbow horizontal, Rainbow vertical, Rainbow quadrant, Rainbow centered, Solid and Off. Choosing an animation or Solid turns the light on; Solid restores the last solid color. Off turns the light off. The existing Matter light remains responsible for brightness, color and power. Changes from Matter and the button update the selector, and the selector updates Matter power. When power is off, the selector reports Off; switching power on through Matter restores the previous mode unless the button's local off mode was selected, which restores Solid.
+
+The device publishes retained discovery, state and availability messages and uses an MQTT last will for offline status. It reannounces discovery on connection and when Home Assistant announces that it is online. Commands are not retained by the Home Assistant selector, and retained commands received on subscription are ignored. A unique device ID based on the Wi-Fi MAC address is used for its MQTT client, discovery and topics. MQTT connectivity is optional: it retries on failure and does not gate Matter, LEDs or OTA startup.
+
 ## Wiring
 
 Run `idf.py -B build-matter menuconfig` to adjust **BIG-R LEDs** and **BIG-R application**.
@@ -126,14 +134,17 @@ The LED component owns SPI2 and uses DMA to transmit WS2812 data on MOSI, withou
 
 ## Verification
 
-The OTA-capable ESP32-C3 firmware builds with ESP-IDF v6.0.2 and ESP-Matter release/v1.6.1. The current image is 1,662,208 bytes, leaving approximately 15% free in either application slot. The previous 2.0.0 firmware's LEDs, animations and Home Assistant pairing were confirmed on the installed hardware. Version 2.1.0 was installed over USB on 8 November 2026. Esptool verified the writes; UART confirms both saved Matter fabrics, Wi-Fi at `192.168.3.14`, and the OTA service on port 8080. The per-device key was retrieved into `private/ota-key.hex` (mode 0600). A fresh pre-migration backup is `private/pre-ota-flash-20261108.bin`, with an adjacent SHA256 file. The laptop could not reach the device over the LAN during this session, so an actual LAN update remains to be tested. Installation captures are under `logs/ota-*-20261108.log`.
+The OTA-capable ESP32-C3 firmware builds with ESP-IDF v6.0.2 and ESP-Matter release/v1.6.1. A build with MQTT support is 1,771,088 bytes, leaving approximately 10% free in either application slot. The previous 2.0.0 firmware's LEDs, animations and Home Assistant pairing were confirmed on the installed hardware. Version 2.1.0 was installed over USB on 8 November 2026. Esptool verified the writes; UART confirms both saved Matter fabrics, Wi-Fi at `192.168.3.14`, and the OTA service on port 8080. The per-device key was retrieved into `private/ota-key.hex` (mode 0600). A fresh pre-migration backup is `private/pre-ota-flash-20261108.bin`, with an adjacent SHA256 file. The laptop could not reach the device over the LAN during this session, so an actual LAN update remains to be tested. Installation captures are under `logs/ota-*-20261108.log`.
 
 ```sh
 python3 tests/run_host_tests.py
+python3 tests/run_mqtt_tests.py
 python3 tests/run_ota_tests.py
 ```
 
 Renderer tests compile the real component with AddressSanitizer/UndefinedBehaviorSanitizer and exercise geometry, four original patterns, button/off cycle, Matter solid-color requests, power, zero brightness and XY dimming.
+
+MQTT tests compile the event handler and selector mapping against fake MQTT and Matter backends. They cover discovery content, command validation, state reporting, reconnect and Home Assistant's birth message. They require the managed cJSON component to have been downloaded by the firmware build; they do not replace testing against a real broker and Home Assistant.
 
 OTA tests compile the real server handlers with a fake flash/SDK backend and AddressSanitizer/UndefinedBehaviorSanitizer. They cover authentication, expired/replayed requests, fragmented reads, interrupted uploads, wrong project/chip, size limits, corrupt payloads, SDK validation failure, key persistence and first-boot health/rollback. The Python helper is exercised against a loopback HTTP device simulator, including transfer, confirmation, invalid keys and rollback detection. These tests require a C compiler and OpenSSL development headers (`brew install openssl@3` on Apple Silicon macOS; alternatively `OPENSSL_PREFIX` or `pkg-config`). They do not replace hardware power-loss, Wi-Fi and flash testing.
 

@@ -280,6 +280,8 @@ extern "C" void app_main()
     ESP_ERROR_CHECK(app_driver_light_set_defaults(light_endpoint_id));
     app_driver_button_init();
     ESP_ERROR_CHECK(lan_ota_start());
+    err = app_mqtt_start(light_handle);
+    if (err != ESP_OK) ESP_LOGE(TAG, "MQTT startup failed: %s", esp_err_to_name(err));
 
 #if CONFIG_ENABLE_ENCRYPTED_OTA
     err = esp_matter_ota_requestor_encrypted_init(s_decryption_key, s_decryption_key_len);
