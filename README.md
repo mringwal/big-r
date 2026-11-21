@@ -2,7 +2,7 @@
 
 BIG-R is single large light-box in the shape of the letter 'R'. It contains a power supply, and ESP32-C3 and an WS2812 LED strip with 573 LEDs, of which 454 are lit.
 
-The ESP32-C3 firmware is based on Espressif's official ESP-Matter extended-color light example. The `big_r_led` ESP-IDF component implements BIG-R geometry and four rainbow animation tables and a fire animation. A 32×32 framebuffer maps the 454 lit LED positions onto the WS2812 strip. Gaps sta dark.
+The ESP32-C3 firmware is based on Espressif's official ESP-Matter extended-color light example. The `big_r_led` ESP-IDF component implements BIG-R geometry and four rainbow animation tables and fire and rain/snow animations. A 32×32 framebuffer maps the 454 lit LED positions onto the WS2812 strip. Gaps sta dark.
 
 ## Build
 
@@ -103,7 +103,7 @@ The implementation is the `components/lan_ota` component; laptop helpers are in 
 
 ## Controls
 
-- Short button press: first animation → second → third → fourth → Fire → all LEDs off → first animation. Pressing from a solid color starts the first animation.
+- Short button press: first animation → second → third → fourth → Fire → Rain/Snow → all LEDs off → first animation. Pressing from a solid color starts the first animation.
 - A Matter hue/saturation, XY, or color-temperature attribute update selects a solid color and turns the light on, including when leaving the local off mode. ColorControl defaults to ExecuteIfOff so a color request can leave off mode. Explicit command options that suppress execution while off are respected. Repeating the stored color also exits an animation.
 - Matter brightness adjusts the current solid color or animation. Zero brightness is supported.
 - Matter On/Off gates the current animation/color. Turning on from the button's off mode restores the last solid color.
@@ -117,7 +117,7 @@ The SDL2 simulator runs the shared C animation renderer on a desktop and shows e
 
 BIG-R connects to the MQTT broker at `homeassistant.local:1883` using the configured credentials in `main/app_mqtt.cpp`. This is plain MQTT, so the credentials and commands are not encrypted on the network. Home Assistant's MQTT integration and discovery must be enabled, and the broker must allow this device to publish and subscribe. The credentials are compiled into the firmware.
 
-After connecting, BIG-R announces a separate MQTT select entity named **Animation** with Rainbow horizontal, Rainbow vertical, Rainbow quadrant, Rainbow centered, Fire, Solid and Off. Choosing an animation or Solid turns the light on; Solid restores the last solid color. Off turns the light off. The existing Matter light remains responsible for brightness, color and power. Changes from Matter and the button update the selector, and the selector updates Matter power. When power is off, the selector reports Off; switching power on through Matter restores the previous mode unless the button's local off mode was selected, which restores Solid.
+After connecting, BIG-R announces a separate MQTT select entity named **Animation** with Rainbow horizontal, Rainbow vertical, Rainbow quadrant, Rainbow centered, Fire, Rain/Snow, Solid and Off. Choosing an animation or Solid turns the light on; Solid restores the last solid color. Off turns the light off. The existing Matter light remains responsible for brightness, color and power. Changes from Matter and the button update the selector, and the selector updates Matter power. When power is off, the selector reports Off; switching power on through Matter restores the previous mode unless the button's local off mode was selected, which restores Solid.
 
 The device publishes retained discovery, state and availability messages and uses an MQTT last will for offline status. It reannounces discovery on connection and when Home Assistant announces that it is online. Commands are not retained by the Home Assistant selector, and retained commands received on subscription are ignored. A unique device ID based on the Wi-Fi MAC address is used for its MQTT client, discovery and topics. MQTT connectivity is optional: it retries on failure and does not gate Matter, LEDs or OTA startup.
 

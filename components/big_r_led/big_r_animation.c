@@ -26,8 +26,8 @@ static void render_fire(unsigned frame, uint8_t brightness, RGB_color_t *pixels)
     for (unsigned y = 0; y < 32; ++y) {
         for (unsigned x = 0; x < 32; ++x) {
             /* y=0 is the top. Noise travels upwards as time advances. */
-            unsigned noise = fire_noise(x * 64, y * 80 + frame * 18u);
-            int heat = (int)noise + (int)y * 6 - 105;
+            unsigned noise = fire_noise(x * 64, y * 80 + frame * 6u);
+            int heat = (int)noise + (int)y * 6 - 105 - (31 - (int)y) * 3;
             if (heat < 0) heat = 0;
             if (heat > 255) heat = 255;
             unsigned red = heat < 85 ? (unsigned)heat * 3 : 255;
@@ -38,9 +38,39 @@ static void render_fire(unsigned frame, uint8_t brightness, RGB_color_t *pixels)
     }
 }
 
+/* Particles move down one cell per eight frames. A faint, two-cell trail
+ * remains visible on the sparse rows of the real LED mapping. */
+static void render_rain_snow(unsigned frame, uint8_t brightness, RGB_color_t *pixels)
+{
+    memset(pixels, 0, sizeof(*pixels) * BIG_R_MATRIX_PIXELS);
+    for (unsigned particle = 0; particle < 56; ++particle) {
+        unsigned seed = noise_point(particle, 37);
+        unsigned x = noise_point(particle, 11) % 32;
+        unsigned position = (seed + frame / 8) % 40;
+        unsigned fraction = frame % 8;
+        unsigned white = noise_point(particle, 73);
+        for (unsigned tail = 0; tail < 4; ++tail) {
+            int y = (int)position - (int)tail;
+            if (y < 0 || y >= 32) continue;
+            unsigned strength = tail == 0 ? 120 + fraction * 17 :
+                                tail == 1 ? 255 - fraction * 16 :
+                                tail == 2 ? 127 - fraction * 8 : 63 - fraction * 7;
+            unsigned blue = strength * brightness / 100;
+            unsigned green = blue * (128 + white / 2) / 255;
+            unsigned red = blue * white / 255;
+            RGB_color_t *pixel = &pixels[(unsigned)y * 32 + x];
+            if (blue > pixel->blue) *pixel = (RGB_color_t){red, green, blue};
+        }
+    }
+}
+
 void big_r_animation_render(unsigned mode, unsigned phase, uint8_t brightness,
                             RGB_color_t framebuffer[BIG_R_MATRIX_PIXELS])
 {
+    if (mode == BIG_R_RAIN_SNOW_MODE) {
+        render_rain_snow(phase, brightness, framebuffer);
+        return;
+    }
     if (mode == BIG_R_FIRE_MODE) {
         render_fire(phase, brightness, framebuffer);
         return;

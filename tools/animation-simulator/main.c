@@ -6,12 +6,12 @@
 #include "big_r_patterns.h"
 
 #define SIZE 768
-static const char *names[] = {"Rainbow horizontal", "Rainbow vertical", "Rainbow quadrant", "Rainbow centered", "Fire"};
+static const char *names[] = {"Rainbow horizontal", "Rainbow vertical", "Rainbow quadrant", "Rainbow centered", "Fire", "Rain/Snow"};
 
 static void title(SDL_Window *window, unsigned mode, unsigned brightness, bool mapped, bool paused)
 {
     char text[256];
-    snprintf(text, sizeof(text), "BIG-R | %s | %s | brightness %u%% | %s | 1-5: animation, M: view, +/-: brightness, Space: pause",
+    snprintf(text, sizeof(text), "BIG-R | %s | %s | brightness %u%% | %s | 1-6: animation, M: view, +/-: brightness, Space: pause",
              names[mode - 1], mapped ? "mapped LEDs" : "color field", brightness, paused ? "paused" : "playing");
     SDL_SetWindowTitle(window, text);
 }
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     bool mask[BIG_R_MATRIX_PIXELS] = {false};
     for (size_t i = 0; i < sizeof(led_to_matrix) / sizeof(led_to_matrix[0]); ++i)
         mask[led_to_matrix[i].matrix_index] = true;
-    unsigned mode = 1, brightness = 25, phase = 0;
+    unsigned mode = 1, brightness = 100, phase = 0;
     bool mapped = true, paused = false, running = true;
     RGB_color_t pixels[BIG_R_MATRIX_PIXELS];
     Uint32 last = SDL_GetTicks();
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
             if (event.type != SDL_KEYDOWN || event.key.repeat) continue;
             SDL_Keycode key = event.key.keysym.sym;
             if (key == SDLK_ESCAPE || key == SDLK_q) running = false;
-            else if (key >= SDLK_1 && key <= SDLK_5) mode = (unsigned)(key - SDLK_1) + 1;
+            else if (key >= SDLK_1 && key <= SDLK_6) mode = (unsigned)(key - SDLK_1) + 1;
             else if (key == SDLK_m) mapped = !mapped;
             else if (key == SDLK_SPACE) paused = !paused;
             else if ((key == SDLK_PLUS || key == SDLK_EQUALS || key == SDLK_KP_PLUS) && brightness < 100) brightness = brightness > 95 ? 100 : brightness + 5;
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
             phase += steps;
             last += steps * 20;
         } else if (paused) last = now;
-        big_r_animation_render(mode == 5 ? BIG_R_FIRE_MODE : mode, phase, brightness, pixels);
+        big_r_animation_render(mode >= 5 ? mode + 1 : mode, phase, brightness, pixels);
         SDL_SetRenderDrawColor(renderer, 12, 12, 16, 255); SDL_RenderClear(renderer);
         for (unsigned i = 0; i < BIG_R_MATRIX_PIXELS; ++i) {
             if (mapped && !mask[i]) continue;

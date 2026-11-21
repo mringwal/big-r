@@ -11,6 +11,7 @@ The simulator compiles the same `big_r_animation.c`, color conversion and patter
 
 - **1–4**: select a rainbow animation
 - **5**: select Fire
+- **6**: select Rain/Snow
 - **M**: switch between mapped cells and the full field
 - **+ / −**: adjust brightness
 - **Space**: pause or resume
