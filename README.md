@@ -109,6 +109,10 @@ The implementation is the `components/lan_ota` component; laptop helpers are in 
 - Matter On/Off gates the current animation/color. Turning on from the button's off mode restores the last solid color.
 - Button changes update the Matter On/Off attribute. There is no long-press factory reset; the console's factory-reset command remains available.
 
+### Desktop animation simulator
+
+The SDL2 simulator runs the shared C animation renderer on a desktop and shows either the complete color field or mapped LED cells. See [simulator instructions](tools/animation-simulator/README.md) for build and controls.
+
 ### Home Assistant animation selector
 
 BIG-R connects to the MQTT broker at `homeassistant.local:1883` using the configured credentials in `main/app_mqtt.cpp`. This is plain MQTT, so the credentials and commands are not encrypted on the network. Home Assistant's MQTT integration and discovery must be enabled, and the broker must allow this device to publish and subscribe. The credentials are compiled into the firmware.

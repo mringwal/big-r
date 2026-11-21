@@ -54,5 +54,5 @@ with tempfile.TemporaryDirectory(prefix="big-r-test-") as temporary:
     subprocess.run(["cc", "-std=c11", "-fsanitize=address,undefined", "-g",
                     "-I" + str(tmp), "-I" + str(component / "include"), "-I" + str(component), "-I" + str(root / "main"),
                     str(root / "tests/test_renderer.c"), str(component / "big_r_led.c"),
-                    str(component / "color_format.c"), str(root / "main/mqtt_select.c"), "-lm", "-o", str(tmp / "test")], check=True)
+                    str(component / "big_r_animation.c"), str(component / "color_format.c"), str(root / "main/mqtt_select.c"), "-lm", "-o", str(tmp / "test")], check=True)
     subprocess.run([str(tmp / "test")], check=True)
