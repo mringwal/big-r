@@ -47,10 +47,10 @@ static void mapped_color(unsigned r, unsigned g, unsigned b) {
 int main(void) {
     size_t count = 0;
     const big_r_animation_info_t *list = big_r_led_get_animations(&count);
-    const char *names[] = {"Rainbow horizontal", "Rainbow vertical", "Rainbow quadrant", "Rainbow centered"};
-    assert(list && count == 4 && big_r_led_get_animations(NULL) == list);
+    const char *names[] = {"Rainbow horizontal", "Rainbow vertical", "Rainbow quadrant", "Rainbow centered", "Fire"};
+    assert(list && count == 5 && big_r_led_get_animations(NULL) == list);
     for (size_t i = 0; i < count; ++i) {
-        assert(list[i].id == (big_r_animation_t)(i + 1));
+        assert(list[i].id == (big_r_animation_t)(i == 4 ? BIG_R_ANIMATION_FIRE : i + 1));
         assert(strcmp(list[i].name, names[i]) == 0);
         big_r_animation_t parsed;
         assert(mqtt_select_parse(names[i], strlen(names[i]), &parsed) && parsed == list[i].id);
@@ -100,6 +100,13 @@ int main(void) {
         hsv_to_rgb(hs,100,&expected);
         assert(memcmp(&expected,&pixels[led_to_matrix[i].led_id],sizeof(expected)) == 0);
     }
+    assert(big_r_led_next_animation());
+    assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_FIRE);
+    frame(); assert(!dark());
+    RGB_color_t fire_first[573]; memcpy(fire_first, pixels, sizeof(pixels));
+    frames(10); assert(memcmp(fire_first, pixels, sizeof(pixels)) != 0);
+    assert(big_r_led_set_brightness(h, 0) == 0); frame(); assert(dark());
+    assert(big_r_led_set_brightness(h, 100) == 0);
     assert(!big_r_led_next_animation()); frame(); assert(dark());
     assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_OFF);
     // Direct selection works from local off and from the independent power gate.
@@ -114,7 +121,7 @@ int main(void) {
     assert(big_r_led_get_state(h, &current, &power) == 0 && power && current == BIG_R_ANIMATION_RAINBOW_CENTERED);
     assert(big_r_led_select_solid(h) == 0); frame(); mapped_color(255,0,0);
     assert(big_r_led_get_state(h, &current, &power) == 0 && power && current == BIG_R_ANIMATION_SOLID);
-    assert(big_r_led_set_animation(h, BIG_R_ANIMATION_RAINBOW_CENTERED) == 0);
+    assert(big_r_led_set_animation(h, BIG_R_ANIMATION_FIRE) == 0);
     assert(!big_r_led_next_animation());
     assert(big_r_led_set_hue(h,120) == 0); frame(); mapped_color(0,255,0);
     assert(big_r_led_get_animation(h, &current) == 0 && current == BIG_R_ANIMATION_SOLID);
@@ -132,5 +139,5 @@ int main(void) {
     mapped_color(expected.red,expected.green,expected.blue);
     assert(big_r_led_set_hue(NULL,0) != 0);
     assert(big_r_led_set_brightness(h,101) != 0);
-    puts("PASS: geometry, four patterns, button/off cycle, Matter solid colors, power, zero brightness, XY dimming");
+    puts("PASS: geometry, four patterns, fire, button/off cycle, Matter solid colors, power, zero brightness, XY dimming");
 }

@@ -16,6 +16,7 @@ typedef enum {
     BIG_R_ANIMATION_RAINBOW_QUADRANT,
     BIG_R_ANIMATION_RAINBOW_CENTERED,
     BIG_R_ANIMATION_SOLID,
+    BIG_R_ANIMATION_FIRE,
 } big_r_animation_t;
 
 typedef struct {
@@ -44,7 +45,7 @@ esp_err_t big_r_led_set_animation(big_r_led_handle_t handle, big_r_animation_t a
 esp_err_t big_r_led_get_state(big_r_led_handle_t handle, big_r_animation_t *animation, bool *power);
 // Restore the last solid color and enable output.
 esp_err_t big_r_led_select_solid(big_r_led_handle_t handle);
-// Cycle solid -> animation 1 -> ... -> animation 4 -> off -> animation 1.
+// Cycle solid -> animation 1 -> ... -> animation 4 -> fire -> off -> animation 1.
 // Returns the resulting power state. Call after initialization, in task context.
 bool big_r_led_next_animation(void);
 #ifdef __cplusplus

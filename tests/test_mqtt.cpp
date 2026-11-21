@@ -19,9 +19,10 @@ static const big_r_animation_info_t animations[] = {
     {BIG_R_ANIMATION_RAINBOW_VERTICAL, "Rainbow vertical"},
     {BIG_R_ANIMATION_RAINBOW_QUADRANT, "Rainbow quadrant"},
     {BIG_R_ANIMATION_RAINBOW_CENTERED, "Rainbow centered"},
+    {BIG_R_ANIMATION_FIRE, "Fire"},
 };
 extern "C" const big_r_animation_info_t *big_r_led_get_animations(size_t *count)
-{ if (count) *count = 4; return animations; }
+{ if (count) *count = 5; return animations; }
 extern "C" esp_err_t big_r_led_get_state(big_r_led_handle_t, big_r_animation_t *mode, bool *on)
 { *mode = selected; *on = power; return ESP_OK; }
 void app_driver_select_mode(intptr_t mode) { ++commands; selected = (big_r_animation_t)mode; }
@@ -59,11 +60,12 @@ int main()
     cJSON *config = cJSON_Parse(messages[0].second.c_str());
     assert(config);
     cJSON *options = cJSON_GetObjectItemCaseSensitive(config, "options");
-    assert(cJSON_GetArraySize(options) == 6);
+    assert(cJSON_GetArraySize(options) == 7);
     assert(strcmp(cJSON_GetArrayItem(options, 1)->valuestring, "Rainbow vertical") == 0);
-    assert(strcmp(cJSON_GetArrayItem(options, 4)->valuestring, "Solid") == 0);
-    assert(strcmp(cJSON_GetArrayItem(options, 5)->valuestring, "Off") == 0);
+    assert(strcmp(cJSON_GetArrayItem(options, 4)->valuestring, "Fire") == 0);
+    assert(strcmp(cJSON_GetArrayItem(options, 5)->valuestring, "Solid") == 0);
     assert(strcmp(cJSON_GetObjectItemCaseSensitive(config, "state_topic")->valuestring, "big_r_000102030405/animation/state") == 0);
+    assert(strcmp(cJSON_GetArrayItem(options, 6)->valuestring, "Off") == 0);
     cJSON_Delete(config);
     assert(messages[1].second == "Solid" && messages[2].second == "online");
     const char *topic = "big_r_000102030405/animation/set";

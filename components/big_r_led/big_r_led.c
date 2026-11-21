@@ -22,9 +22,10 @@ static const big_r_animation_info_t animations[] = {
     {BIG_R_ANIMATION_RAINBOW_VERTICAL, "Rainbow vertical"},
     {BIG_R_ANIMATION_RAINBOW_QUADRANT, "Rainbow quadrant"},
     {BIG_R_ANIMATION_RAINBOW_CENTERED, "Rainbow centered"},
+    {BIG_R_ANIMATION_FIRE, "Fire"},
 };
-_Static_assert(sizeof(animations) / sizeof(animations[0]) == PATTERN_COUNT, "Animation list must match patterns");
-_Static_assert(BIG_R_ANIMATION_SOLID == PATTERN_COUNT + 1, "Animation IDs must match patterns");
+_Static_assert(sizeof(animations) / sizeof(animations[0]) == PATTERN_COUNT + 1, "Animation list must match modes");
+_Static_assert(BIG_R_ANIMATION_FIRE == BIG_R_FIRE_MODE, "Fire mode IDs must match");
 typedef struct {
     bool power;
     uint8_t brightness;
@@ -56,7 +57,7 @@ static void render_task(void *arg)
             }
         } else {
             big_r_animation_render(snapshot.mode, phase, snapshot.brightness, framebuffer);
-            phase = (phase + 1) % 360;
+            phase++;
         }
         // Only mapped LEDs are illuminated. Unmapped gap LEDs stay at zero.
         for (unsigned i = 0; i < sizeof(led_to_matrix) / sizeof(led_to_matrix[0]); ++i) {
@@ -147,7 +148,7 @@ esp_err_t big_r_led_select_solid(big_r_led_handle_t handle)
 esp_err_t big_r_led_set_animation(big_r_led_handle_t handle, big_r_animation_t animation)
 {
     if (handle != strip || !strip || animation < BIG_R_ANIMATION_RAINBOW_HORIZONTAL ||
-        animation > BIG_R_ANIMATION_RAINBOW_CENTERED) return ESP_ERR_INVALID_ARG;
+        (animation > BIG_R_ANIMATION_RAINBOW_CENTERED && animation != BIG_R_ANIMATION_FIRE)) return ESP_ERR_INVALID_ARG;
     xSemaphoreTake(mutex, portMAX_DELAY);
     state.mode = (unsigned)animation;
     state.power = true;
@@ -158,8 +159,9 @@ esp_err_t big_r_led_set_animation(big_r_led_handle_t handle, big_r_animation_t a
 bool big_r_led_next_animation(void)
 {
     xSemaphoreTake(mutex, portMAX_DELAY);
-    state.mode = state.mode == MODE_SOLID ? 1 :
-        (state.mode >= PATTERN_COUNT ? MODE_OFF : state.mode + 1);
+    state.mode = state.mode == MODE_SOLID || state.mode == MODE_OFF ? 1 :
+        state.mode == PATTERN_COUNT ? BIG_R_ANIMATION_FIRE :
+        state.mode == BIG_R_ANIMATION_FIRE ? MODE_OFF : state.mode + 1;
     // A press from solid color starts the first animation.
     // MODE_SOLID is outside the animation cycle.
     state.power = state.mode != MODE_OFF;
