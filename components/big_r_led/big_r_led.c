@@ -5,6 +5,7 @@
 #include "big_r_led.h"
 #include "color_format.h"
 #include "big_r_patterns.h"
+#include "big_r_animation.h"
 #include "led_strip.h"
 #include "driver/spi_master.h"
 #include "freertos/FreeRTOS.h"
@@ -13,7 +14,7 @@
 #include "esp_log.h"
 #include <string.h>
 
-#define MATRIX_PIXELS (32 * 32)
+#define MATRIX_PIXELS BIG_R_MATRIX_PIXELS
 #define PATTERN_COUNT (sizeof(patterns) / sizeof(patterns[0]))
 enum { MODE_OFF = BIG_R_ANIMATION_OFF, MODE_SOLID = BIG_R_ANIMATION_SOLID };
 static const big_r_animation_info_t animations[] = {
@@ -54,11 +55,7 @@ static void render_task(void *arg)
                 framebuffer[i] = snapshot.solid;
             }
         } else {
-            const uint16_t *pattern = patterns[snapshot.mode - 1];
-            for (unsigned i = 0; i < MATRIX_PIXELS; ++i) {
-                HS_color_t hs = {(pattern[i] + phase) % 360, 100};
-                hsv_to_rgb(hs, snapshot.brightness, &framebuffer[i]);
-            }
+            big_r_animation_render(snapshot.mode, phase, snapshot.brightness, framebuffer);
             phase = (phase + 1) % 360;
         }
         // Only mapped LEDs are illuminated. Unmapped gap LEDs stay at zero.
